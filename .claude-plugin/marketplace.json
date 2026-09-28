@@ -1,0 +1,15 @@
+{
+  "name": "code-walk",
+  "owner": { "name": "shin" },
+  "metadata": {
+    "description": "Code Walk — Claude writes step-by-step code walks, the Rider/IntelliJ plugin shows them."
+  },
+  "plugins": [
+    {
+      "name": "code-walk",
+      "source": "./claude-plugin",
+      "description": "/walk command, code-walk skill and the UserPromptSubmit hook that tells Claude which step you are viewing in the IDE.",
+      "version": "0.1.0"
+    }
+  ]
+}

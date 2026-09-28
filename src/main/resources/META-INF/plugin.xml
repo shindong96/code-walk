@@ -1,0 +1,36 @@
+<idea-plugin>
+    <id>dev.shin.codewalk</id>
+    <name>Code Walk</name>
+    <vendor>shin</vendor>
+    <description><![CDATA[
+        Step through a code walkthrough written by Claude Code. A walk is a list of steps
+        (file, line range, explanation). The Code Walk tool window lists the steps; picking one
+        moves the editor to the code and highlights it. The current position is written to
+        <code>~/.code-walk/state.json</code> so Claude Code knows what you are looking at when you ask a question.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="Code Walk"
+                    anchor="bottom"
+                    icon="/icons/walk.svg"
+                    factoryClass="dev.shin.codewalk.ui.CodeWalkToolWindowFactory"/>
+        <notificationGroup id="Code Walk" displayType="BALLOON"/>
+    </extensions>
+
+    <actions>
+        <group id="CodeWalk.Actions" text="Code Walk" popup="false">
+            <action id="CodeWalk.Prev" class="dev.shin.codewalk.actions.PrevStepAction"
+                    text="Code Walk: Previous Step" icon="AllIcons.Actions.Back">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt UP"/>
+            </action>
+            <action id="CodeWalk.Next" class="dev.shin.codewalk.actions.NextStepAction"
+                    text="Code Walk: Next Step" icon="AllIcons.Actions.Forward">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt DOWN"/>
+            </action>
+            <action id="CodeWalk.Reload" class="dev.shin.codewalk.actions.ReloadAction"
+                    text="Code Walk: Reload Walks" icon="AllIcons.Actions.Refresh"/>
+        </group>
+    </actions>
+</idea-plugin>

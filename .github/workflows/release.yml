@@ -1,0 +1,57 @@
+name: Release
+
+# Tag a commit `vX.Y.Z` and push it: this builds the plugin, publishes a GitHub Release with the
+# zip, and attaches an updatePlugins.xml so Rider can treat this repo as a plugin repository:
+#   Settings | Plugins | ⚙ | Manage Plugin Repositories | + |
+#   https://github.com/shindong96/code-walk/releases/latest/download/updatePlugins.xml
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      # -PriderPath= (empty) → build.gradle.kts falls back to downloading Rider platformVersion.
+      - name: Build plugin
+        run: ./gradlew buildPlugin -PpluginVersion="$VERSION" -PriderPath= --no-daemon
+
+      - name: Write updatePlugins.xml
+        run: |
+          SINCE=$(sed -n 's/^platformSinceBuild=//p' gradle.properties)
+          UNTIL=$(sed -n 's/^platformUntilBuild=//p' gradle.properties)
+          cat > updatePlugins.xml <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <plugins>
+            <plugin id="dev.shin.codewalk"
+                    url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/code-walk-${VERSION}.zip"
+                    version="${VERSION}">
+              <idea-version since-build="${SINCE}" until-build="${UNTIL}"/>
+            </plugin>
+          </plugins>
+          EOF
+          cat updatePlugins.xml
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            build/distributions/code-walk-${{ env.VERSION }}.zip
+            updatePlugins.xml
