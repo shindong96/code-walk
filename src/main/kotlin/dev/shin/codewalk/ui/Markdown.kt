@@ -7,12 +7,38 @@ package dev.shin.codewalk.ui
 object Markdown {
     private fun esc(s: String) = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
+    /** `(line 1598)` / `(lines 1598-1602)` — same file as the step. Rendered as a `walk:line:…` link. */
+    private val lineRef = Regex("\\((?:line|lines|L)\\s*(\\d+)(?:\\s*[-–~]\\s*(\\d+))?\\)")
+
+    /** `(Services/Foo.cs:120)` / `(Foo.cs:120-140)` — another file, relative to the walk's project. */
+    private val fileRef = Regex("\\(([\\w./\\\\-]+\\.\\w+):(\\d+)(?:-(\\d+))?\\)")
+
     private fun inline(s: String): String {
         var t = esc(s)
         t = t.replace(Regex("`([^`]+)`")) { "<code>${it.groupValues[1]}</code>" }
         t = t.replace(Regex("\\*\\*(.+?)\\*\\*")) { "<b>${it.groupValues[1]}</b>" }
         t = t.replace(Regex("(?<![*\\w])\\*(?!\\s)(.+?)(?<!\\s)\\*(?![*\\w])")) { "<i>${it.groupValues[1]}</i>" }
+        t = t.replace(lineRef) {
+            val (a, b) = it.destructured
+            val label = if (b.isEmpty()) "line $a" else "lines $a–$b"
+            "(<a href=\"walk:line:$a:$b\">$label</a>)"
+        }
+        t = t.replace(fileRef) {
+            val (f, a, b) = it.destructured
+            val label = if (b.isEmpty()) "$f:$a" else "$f:$a–$b"
+            "(<a href=\"walk:file:$f:$a:$b\">$label</a>)"
+        }
         return t
+    }
+
+    /** Parses a `walk:` href produced above. Returns (file or null for "same file", line, endLine). */
+    fun parseLink(href: String): Triple<String?, Int, Int?>? {
+        val p = href.split(':')
+        return when {
+            p.size == 4 && p[0] == "walk" && p[1] == "line" -> Triple(null, p[2].toIntOrNull() ?: return null, p[3].toIntOrNull())
+            p.size == 5 && p[0] == "walk" && p[1] == "file" -> Triple(p[2], p[3].toIntOrNull() ?: return null, p[4].toIntOrNull())
+            else -> null
+        }
     }
 
     fun toHtml(md: String): String {

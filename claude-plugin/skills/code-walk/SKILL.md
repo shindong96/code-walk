@@ -68,9 +68,19 @@ Path: `~/.code-walk/walks/<id>.walk.json` — **outside the repo**, so nothing l
 ### Body (markdown, 4–8 sentences, in the user's language)
 
 **Explain the flow, not the lines.** The highlighted code is already on their screen, so the body
-must answer "what happens here and why", never "line N does X". No line numbers, no code blocks,
-no restating what a statement literally does. Think of it as what a senior colleague would say
-while pointing at the screen: what comes in, what is decided, what goes out, what it protects.
+must answer "what happens here and why", never "line N does X". No code blocks, no restating what
+a statement literally does. Think of it as what a senior colleague would say while pointing at the
+screen: what comes in, what is decided, what goes out, what it protects.
+
+**Line references go at the end of the sentence, in parentheses, and become clickable links in
+the tool window** (the editor jumps there when clicked):
+
+- `(line 1417)` or `(lines 1441-1460)` — a spot in the step's own file
+- `(Services/Foo.cs:120)` — a spot in another file, relative to the project root
+
+Never put a line number inside the sentence ("1417줄에서 …"). Use a reference only where the
+reader would otherwise have to hunt for the spot — a branch, an early return, a call handed off —
+and at most one per sentence. Most sentences need none.
 
 Shape:
 
@@ -83,7 +93,7 @@ Shape:
    protects (ordering, fail-open, a contract another caller depends on). Skip if there is none.
 4. **Where it goes next** — which call the next step follows, and what you skipped and why, in one line.
 
-Good: "잠금 중이면 비밀번호를 대조하지 않고 바로 거절해요. 잠금 상태는 Redis 에 있고, 규칙은 10분 안에 5번 실패면 10분 잠금이에요."
+Good: "잠금 중이면 비밀번호를 대조하지 않고 바로 거절해요 (line 89). 잠금 상태는 Redis 에 있고, 규칙은 10분 안에 5번 실패면 10분 잠금이에요."
 Bad: "85줄에서 lockoutKey 를 만들고 86줄에서 캐시를 읽은 뒤 89줄에서 IsLockedOut 을 호출해요."
 
 Plain language. Identifiers stay in backticks.

@@ -9,7 +9,7 @@
       "name": "code-walk",
       "source": "./claude-plugin",
       "description": "/walk command, code-walk skill and the UserPromptSubmit hook that tells Claude which step you are viewing in the IDE.",
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   ]
 }

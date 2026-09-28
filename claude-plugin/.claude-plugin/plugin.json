@@ -1,6 +1,6 @@
 {
   "name": "code-walk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Claude writes a step-by-step code walk; the Code Walk IDE plugin shows it. Ask questions here while you browse the steps in the IDE.",
   "author": { "name": "shin" }
 }

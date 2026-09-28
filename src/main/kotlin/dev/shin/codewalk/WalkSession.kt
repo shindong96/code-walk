@@ -127,6 +127,21 @@ class WalkSession(private val project: Project) : Disposable {
         fire()
     }
 
+    /**
+     * A `(line N)` / `(File.cs:N)` reference in the step body was clicked: move the editor there
+     * without changing the current step. `file == null` means the step's own file.
+     */
+    fun jumpTo(file: String?, line: Int, endLine: Int?) {
+        val walk = current ?: return
+        val step = walk.steps.getOrNull(stepIndex) ?: return
+        val target = file ?: step.file ?: return
+        ApplicationManager.getApplication().invokeLater({
+            if (project.isDisposed) return@invokeLater
+            reveal(walk, target, line, endLine)
+        }, project.disposed)
+        writeState(walk, stepIndex, focus = Triple(if (file == null) null else file, line, endLine))
+    }
+
     private fun resolve(walk: Walk, file: String): Path {
         val p = Path.of(file)
         if (p.isAbsolute) return p
@@ -160,12 +175,13 @@ class WalkSession(private val project: Project) : Disposable {
         highlightedEditor = null
     }
 
-    private fun writeState(walk: Walk, index: Int) {
+    private fun writeState(walk: Walk, index: Int, focus: Triple<String?, Int, Int?>? = null) {
         val step = walk.steps[index]
         val state = WalkState(
             walk = walk.id, project = walk.project.ifEmpty { project.basePath ?: "" },
             step = index + 1, stepCount = walk.steps.size, stepId = step.id, title = step.title,
             file = step.file, line = step.line, endLine = step.endLine,
+            focusFile = focus?.first, focusLine = focus?.second, focusEndLine = focus?.third,
             updatedAt = OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
         )
         AppExecutorUtil.getAppExecutorService().execute { runCatching { WalkStore.writeState(state) } }

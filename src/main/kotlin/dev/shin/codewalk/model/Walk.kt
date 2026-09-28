@@ -50,6 +50,10 @@ data class WalkState(
     val file: String?,
     val line: Int,
     val endLine: Int?,
+    /** Set when the user clicked a `(line N)` / `(File:N)` reference inside the step body. */
+    val focusFile: String? = null,
+    val focusLine: Int? = null,
+    val focusEndLine: Int? = null,
     val updatedAt: String,
 )
 
@@ -101,7 +105,12 @@ object WalkStore {
         }
         val abs = if (Path.of(file).isAbsolute) file else Path.of(project, file).toString()
         val range = if (endLine != null && endLine != line) "$line-$endLine" else "$line"
-        return "[code-walk] The user is viewing walk '$walk' step $step/$stepCount \"$title\" in the IDE: $abs lines $range. " +
+        val focus = focusLine?.let { fl ->
+            val ff = focusFile?.let { f -> if (Path.of(f).isAbsolute) f else Path.of(project, f).toString() } ?: abs
+            val fr = if (focusEndLine != null && focusEndLine != fl) "$fl-$focusEndLine" else "$fl"
+            " They then clicked a reference and the editor is now on $ff line $fr — 'here'/'여기' most likely means that spot."
+        } ?: ""
+        return "[code-walk] The user is viewing walk '$walk' step $step/$stepCount \"$title\" in the IDE: $abs lines $range.$focus " +
             "Their question is about THIS code unless they clearly say otherwise — read those lines (Read $abs offset=$line) before answering, " +
             "and do not assume the question continues an earlier topic."
     }

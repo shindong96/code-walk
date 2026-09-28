@@ -94,7 +94,15 @@ class CodeWalkPanel(private val project: Project, parent: Disposable) : JPanel(B
         body.putClientProperty(JEditorPane.HONOR_DISPLAY_PROPERTIES, true)
         body.border = JBUI.Borders.empty(8, 12)
         body.background = UIUtil.getPanelBackground()
-        body.addHyperlinkListener { e -> if (e.eventType == HyperlinkEvent.EventType.ACTIVATED) com.intellij.ide.BrowserUtil.browse(e.url) }
+        body.addHyperlinkListener { e ->
+            if (e.eventType != HyperlinkEvent.EventType.ACTIVATED) return@addHyperlinkListener
+            val href = e.description ?: ""
+            val ref = Markdown.parseLink(href)
+            when {
+                ref != null -> session.jumpTo(ref.first, ref.second, ref.third)
+                e.url != null -> com.intellij.ide.BrowserUtil.browse(e.url)
+            }
+        }
 
         val splitter = OnePixelSplitter(false, 0.3f).apply {
             firstComponent = JBScrollPane(stepsList)
@@ -142,8 +150,10 @@ class CodeWalkPanel(private val project: Project, parent: Disposable) : JPanel(B
         val fg = UIUtil.getLabelForeground()
         val code = JBColor(0xF0F0F0, 0x2B2D30)
         fun hex(c: java.awt.Color) = "#%02x%02x%02x".format(c.red, c.green, c.blue)
+        val link = com.intellij.ui.JBColor.namedColor("Link.activeForeground", JBColor(0x2470B3, 0x589DF6))
         return "<style>" +
             "body{font-family:'${font.family}';font-size:${font.size}pt;color:${hex(fg)};}" +
+            "a{color:${hex(link)};text-decoration:none;}" +
             "h3{margin:0 0 8px 0;} p{margin:0 0 8px 0;} ul{margin:0 0 8px 16px;} li{margin:2px 0;}" +
             "code{font-family:'${UIUtil.getFontWithFallback("JetBrains Mono", 0, font.size).family}';background:${hex(code)};}" +
             "pre{background:${hex(code)};padding:6px;margin:0 0 8px 0;}" +
