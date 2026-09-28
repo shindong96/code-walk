@@ -1,67 +1,117 @@
 # Code Walk
 
-온보딩용으로 직접 필요해서 만든 플러그인이에요. 새 코드베이스나 낯선 흐름을 익힐 때, 예전에
-cmd+B 로 호출 체인을 따라가며 이해하던 방식을 Claude Code 와 IDE 가 대신 이끌어 주게 한 거예요.
+**한국어** · [English](README.en.md)
 
-Claude Code writes a step-by-step walkthrough of a code flow; a Rider/IntelliJ plugin shows it as
-a tool window where each step moves the editor to the code and highlights it. You browse the
-steps in the IDE and ask questions in Claude Code — it knows which step you are looking at.
+온보딩용으로 직접 필요해서 만든 플러그인이에요.
+새 코드베이스나 낯선 흐름을 익힐 때, 예전에 cmd+B 로 호출 체인을 따라가며 이해하던 방식을
+Claude Code 와 IDE 가 대신 이끌어 주게 한 거예요.
+
+<br>
+
+## 어떻게 동작하나
+
+Claude Code 가 코드 흐름을 **단계별 walk** 로 써 주고, Rider/IntelliJ 플러그인이 그걸 툴 윈도우로 보여줘요.
+단계를 클릭하면 에디터가 그 코드로 이동하며 하이라이트돼요.
+
+질문은 Claude Code 에서 해요. 지금 어느 단계를 보고 있는지 Claude 가 알고 있어서,
+"여기 왜 이렇게 했어?" 라고만 물어도 그 코드 기준으로 답해요.
 
 ```
- Claude Code                          ~/.code-walk/                        Rider
- ───────────                          ─────────────                        ─────
- /walk 로그인 과정  ──writes──▶  walks/login.walk.json  ──polled 1s──▶  Code Walk tool window
-                                                                            │ click step / ctrl+alt+↓
- "여기 왜 이래?"   ◀──hook────  state.line / state.json  ◀──writes──      editor moves + highlight
+ Claude Code                         ~/.code-walk/                       Rider
+ ───────────                         ─────────────                       ─────
+ /walk 로그인 과정  ──── 쓰기 ────▶  walks/login.walk.json  ── 1초 폴링 ──▶  Code Walk 툴 윈도우
+                                                                            │ 단계 클릭 / ctrl+alt+↓
+ "여기 왜 이래?"   ◀─── 훅 ────    state.json / state.line  ◀── 쓰기 ──   에디터 이동 + 하이라이트
 ```
 
-Nothing is written inside the repository — walks and state live in `~/.code-walk/`.
+레포 안에는 아무것도 생기지 않아요. walk 와 상태 파일은 전부 `~/.code-walk/` 에 있어요.
 
-## Parts
+<br>
 
-| Part | Where | What |
-|---|---|---|
-| IDE plugin (Kotlin) | `src/` | Tool window, step list, editor navigation + highlight, state file |
-| Claude Code plugin | `claude-plugin/` | `/walk` command, `code-walk` skill, `UserPromptSubmit` hook |
+## 구성
 
-## Install the IDE plugin (users)
+| 부분 | 위치 | 역할 |
+|------|------|------|
+| IDE 플러그인 (Kotlin) | `src/` | 툴 윈도우, 단계 목록, 에디터 이동·하이라이트, 상태 파일 기록 |
+| Claude Code 플러그인 | `claude-plugin/` | `/walk` 커맨드, `code-walk` 스킬, 현재 단계를 주입하는 훅 |
 
-Add this repo as a plugin repository once — Rider then offers updates like any Marketplace plugin:
+<br>
 
-**Settings | Plugins | ⚙ | Manage Plugin Repositories | +**
+## 설치
+
+### 1. IDE 플러그인
+
+Rider 에 플러그인 저장소를 한 번만 등록하면, 이후엔 Marketplace 플러그인처럼 업데이트를 받을 수 있어요.
+
+**Settings → Plugins → ⚙ → Manage Plugin Repositories → +**
+
 ```
 https://github.com/shindong96/code-walk/releases/latest/download/updatePlugins.xml
 ```
-Then search "Code Walk" in the Marketplace tab and install. A new version is published whenever a
-`vX.Y.Z` tag is pushed (`.github/workflows/release.yml`).
 
-## Build the IDE plugin (developers)
+등록한 뒤 Marketplace 탭에서 **Code Walk** 를 검색해 설치하세요.
 
-Needs no system JDK — Gradle runs on the JBR that ships with Rider:
+### 2. Claude Code 플러그인
+
+```bash
+claude plugin marketplace add shindong96/code-walk
+```
+
+```bash
+claude plugin install code-walk@code-walk
+```
+
+<br>
+
+## 사용
+
+Claude Code 에서:
+
+```
+/walk 로그인 과정 알려줘
+```
+
+함수 이름, `파일:줄`, 또는 흐름 설명을 인자로 줄 수 있어요.
+잠시 뒤 Rider 하단 **Code Walk** 탭에 walk 가 나타나요.
+
+| 동작 | 방법 |
+|------|------|
+| 단계 이동 | 목록 클릭, 또는 `ctrl+alt+↓` / `ctrl+alt+↑` |
+| 질문 | Claude Code 에서 그냥 물어보기 — 보고 있는 단계가 자동으로 전달돼요 |
+| walk 전환 | 툴 윈도우 상단 드롭다운 |
+
+<br>
+
+## 개발
+
+### IDE 플러그인 빌드
+
+시스템 JDK 가 없어도 돼요. Rider 에 포함된 JBR 로 Gradle 이 돌아가요.
 
 ```bash
 source gradlew.env && ./gradlew installToRider
 ```
 
-`installToRider` builds the plugin and copies it straight into Rider's user plugins directory
-(`~/Library/Application Support/JetBrains/Rider2026.2/plugins/code-walk`); restart Rider to load
-it. `buildPlugin` alone leaves the zip in `build/distributions/` for **Install Plugin from Disk…**.
-Builds against the Rider at `/Applications/Rider.app` (`riderPath` in `gradle.properties`); when
-that path is missing (CI) it downloads Rider `platformVersion` instead.
+`installToRider` 는 빌드 후 Rider 플러그인 폴더에 바로 복사해요. Rider 를 재시작하면 반영돼요.
+zip 만 필요하면 `./gradlew buildPlugin` → `build/distributions/`.
 
-To run a sandbox IDE with the plugin: `./gradlew runIde`.
+기본은 `/Applications/Rider.app` 을 대상으로 빌드해요 (`gradle.properties` 의 `riderPath`).
+그 경로가 없으면(CI) `platformVersion` 의 Rider 를 내려받아 빌드해요.
 
-Release: `git tag v0.2.0 && git push origin v0.2.0` — CI builds, creates the GitHub Release and
-refreshes `updatePlugins.xml`.
+샌드박스 IDE 로 실행: `./gradlew runIde`
 
-## Install the Claude Code plugin
+### 릴리스
 
 ```bash
-claude --plugin-dir /Users/shin/Desktop/code-walk/claude-plugin
+git tag v0.2.0 && git push origin v0.2.0
 ```
 
-## Walk file format
+CI 가 빌드하고 GitHub Release 를 만들고 `updatePlugins.xml` 을 갱신해요.
+Rider 는 다음 확인 때 업데이트를 제안해요.
 
-`~/.code-walk/walks/<id>.walk.json` — see `claude-plugin/skills/code-walk/SKILL.md` for the
-schema. `~/.code-walk/state.json` (and the one-line `state.line`) hold the current step; the IDE
-plugin writes them, the hook reads them.
+<br>
+
+## 파일 형식
+
+`~/.code-walk/walks/<id>.walk.json` — 스키마는 [`claude-plugin/skills/code-walk/SKILL.md`](claude-plugin/skills/code-walk/SKILL.md) 참고.
+`~/.code-walk/state.json` (과 한 줄짜리 `state.line`) 이 현재 단계를 담아요. IDE 플러그인이 쓰고, 훅이 읽어요.
