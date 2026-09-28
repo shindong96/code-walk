@@ -35,32 +35,53 @@ import javax.swing.event.HyperlinkEvent
 class CodeWalkPanel(private val project: Project, parent: Disposable) : JPanel(BorderLayout()) {
     private val session = WalkSession.get(project)
 
-    private val walkBox = JComboBox<Walk>()
+    /** Combo rows: a non-selectable date header, or a walk. */
+    private sealed interface Row
+    private data class DateHeader(val label: String) : Row
+    private data class WalkRow(val entry: WalkSession.Entry) : Row
+
+    private val walkBox = JComboBox<Row>()
     private val counter = JBLabel()
     private val stepsModel = DefaultListModel<Step>()
     private val stepsList = JBList(stepsModel)
     private val body = JEditorPane("text/html", "")
     private var syncing = false
+    private var lastWalkRow: WalkRow? = null
 
     init {
         border = JBUI.Borders.empty()
 
         // --- header: walk picker + navigation actions ---
-        walkBox.renderer = object : ColoredListCellRenderer<Walk>() {
-            override fun customizeCellRenderer(list: JList<out Walk>, value: Walk?, index: Int, selected: Boolean, focus: Boolean) {
-                if (value == null) append("(walk 없음 — Claude Code 에서 /walk 를 실행하세요)", SimpleTextAttributes.GRAYED_ATTRIBUTES)
-                else { append(value.title.ifEmpty { value.id }); append("  ${value.steps.size} steps", SimpleTextAttributes.GRAYED_ATTRIBUTES) }
+        walkBox.renderer = object : ColoredListCellRenderer<Row>() {
+            override fun customizeCellRenderer(list: JList<out Row>, value: Row?, index: Int, selected: Boolean, focus: Boolean) {
+                when (value) {
+                    null -> append("(walk 없음 — Claude Code 에서 /walk 를 실행하세요)", SimpleTextAttributes.GRAYED_ATTRIBUTES)
+                    is DateHeader -> {
+                        // index == -1 is the closed combo's own face; headers never show there.
+                        append(value.label, SimpleTextAttributes.GRAYED_BOLD_ATTRIBUTES)
+                        background = UIUtil.getPanelBackground()
+                    }
+                    is WalkRow -> {
+                        val w = value.entry.walk
+                        if (index >= 0) ipad = JBUI.insets(2, 14, 2, 6)   // indent under the date header in the popup
+                        append(w.title.ifEmpty { w.id })
+                        append("  ${w.steps.size} steps · ${timeFmt.format(java.time.Instant.ofEpochMilli(value.entry.createdAt))}", SimpleTextAttributes.GRAYED_ATTRIBUTES)
+                    }
+                }
             }
         }
         walkBox.addActionListener {
             if (syncing) return@addActionListener
-            val w = walkBox.selectedItem as? Walk ?: return@addActionListener
-            if (w.id != session.current?.id) session.open(w)
+            when (val sel = walkBox.selectedItem) {
+                is DateHeader -> { syncing = true; try { walkBox.selectedItem = lastWalkRow } finally { syncing = false } }
+                is WalkRow -> { lastWalkRow = sel; if (sel.entry.walk.id != session.current?.id) session.open(sel.entry.walk) }
+            }
         }
         val actions = DefaultActionGroup().apply {
             add(ActionManager.getInstance().getAction("CodeWalk.Prev"))
             add(ActionManager.getInstance().getAction("CodeWalk.Next"))
             add(ActionManager.getInstance().getAction("CodeWalk.Reload"))
+            add(ActionManager.getInstance().getAction("CodeWalk.Delete"))
         }
         val toolbar = ActionManager.getInstance().createActionToolbar(ActionPlaces.TOOLWINDOW_CONTENT, actions, true)
         toolbar.targetComponent = this
@@ -118,10 +139,22 @@ class CodeWalkPanel(private val project: Project, parent: Disposable) : JPanel(B
     private fun render() {
         syncing = true
         try {
+            val entries = session.entries
             val walks = session.walks
             val cur = session.current
-            walkBox.model = DefaultComboBoxModel(walks.toTypedArray())
-            walkBox.selectedItem = cur ?: walks.firstOrNull()
+
+            // Newest first, grouped under date headers: 오늘 / 어제 / 9월 26일 / 2025. 12. 3.
+            val rows = ArrayList<Row>()
+            var lastDay: java.time.LocalDate? = null
+            for (e in entries) {
+                val day = java.time.Instant.ofEpochMilli(e.createdAt).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                if (day != lastDay) { rows.add(DateHeader(dayLabel(day))); lastDay = day }
+                rows.add(WalkRow(e))
+            }
+            walkBox.model = DefaultComboBoxModel(rows.toTypedArray())
+            val selRow = rows.filterIsInstance<WalkRow>().let { wr -> wr.firstOrNull { it.entry.walk.id == cur?.id } ?: wr.firstOrNull() }
+            walkBox.selectedItem = selRow
+            lastWalkRow = selRow
             walkBox.isEnabled = walks.isNotEmpty()
 
             val steps = cur?.steps ?: emptyList()
@@ -142,6 +175,18 @@ class CodeWalkPanel(private val project: Project, parent: Disposable) : JPanel(B
             stepsList.repaint()
         } finally {
             syncing = false
+        }
+    }
+
+    private val timeFmt = java.time.format.DateTimeFormatter.ofPattern("HH:mm").withZone(java.time.ZoneId.systemDefault())
+
+    private fun dayLabel(day: java.time.LocalDate): String {
+        val today = java.time.LocalDate.now()
+        return when {
+            day == today -> "오늘"
+            day == today.minusDays(1) -> "어제"
+            day.year == today.year -> "${day.monthValue}월 ${day.dayOfMonth}일"
+            else -> "${day.year}. ${day.monthValue}. ${day.dayOfMonth}."
         }
     }
 

@@ -37,7 +37,10 @@ class WalkSession(private val project: Project) : Disposable {
         fun changed()
     }
 
-    private data class Loaded(val path: Path, val mtime: Long, val walk: Walk)
+    /** A walk plus where it came from. `createdAt` is epoch millis (walk's createdAt, else file mtime). */
+    data class Entry(val walk: Walk, val path: Path, val createdAt: Long)
+
+    private data class Loaded(val path: Path, val mtime: Long, val walk: Walk, val createdAt: Long)
 
     private val listeners = CopyOnWriteArrayList<Listener>()
     private val loaded = LinkedHashMap<Path, Loaded>()
@@ -45,7 +48,9 @@ class WalkSession(private val project: Project) : Disposable {
     private var highlightedEditor: Editor? = null
     private val poll: ScheduledFuture<*>
 
-    @Volatile var walks: List<Walk> = emptyList(); private set
+    /** Newest first. */
+    @Volatile var entries: List<Entry> = emptyList(); private set
+    val walks: List<Walk> get() = entries.map { it.walk }
     @Volatile var current: Walk? = null; private set
     @Volatile var stepIndex: Int = -1; private set
 
@@ -74,11 +79,12 @@ class WalkSession(private val project: Project) : Disposable {
                 if (prev != null && prev.mtime == mtime) continue
                 val walk = WalkStore.read(f) ?: continue
                 if (!belongsHere(walk)) { loaded.remove(f); continue }
-                loaded[f] = Loaded(f, mtime, walk)
+                val created = runCatching { OffsetDateTime.parse(walk.createdAt).toInstant().toEpochMilli() }.getOrElse { mtime }
+                loaded[f] = Loaded(f, mtime, walk, created)
                 changed = true
             }
             if (!changed) return
-            walks = loaded.values.map { it.walk }
+            entries = loaded.values.map { Entry(it.walk, it.path, it.createdAt) }.sortedByDescending { it.createdAt }
             // Keep the open walk on its latest content; drop it if its file disappeared.
             val cur = current
             if (cur != null) {
@@ -109,6 +115,17 @@ class WalkSession(private val project: Project) : Disposable {
         clearHighlight()
         runCatching { WalkStore.clearState() }
         fire()
+    }
+
+    /** Deletes the walk's file. Returns false if it could not be removed. The list refreshes right away. */
+    fun delete(walk: Walk): Boolean {
+        val entry = entries.firstOrNull { it.walk.id == walk.id } ?: return false
+        val ok = runCatching { Files.deleteIfExists(entry.path) }.getOrDefault(false)
+        if (ok) {
+            if (current?.id == walk.id) close()
+            AppExecutorUtil.getAppExecutorService().execute { refresh() }
+        }
+        return ok
     }
 
     fun next() = goTo(stepIndex + 1)

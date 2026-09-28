@@ -31,6 +31,8 @@
             </action>
             <action id="CodeWalk.Reload" class="dev.shin.codewalk.actions.ReloadAction"
                     text="Code Walk: Reload Walks" icon="AllIcons.Actions.Refresh"/>
+            <action id="CodeWalk.Delete" class="dev.shin.codewalk.actions.DeleteWalkAction"
+                    text="Code Walk: Delete Current Walk" icon="AllIcons.Actions.GC"/>
         </group>
     </actions>
 </idea-plugin>
