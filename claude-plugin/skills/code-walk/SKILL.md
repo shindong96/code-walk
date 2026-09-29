@@ -69,7 +69,13 @@ Path: `~/.code-walk/walks/<id>.walk.json` — **outside the repo**, so nothing l
   highlighted (a whole short function, or the few lines the body talks about). Keep ranges ≤ 40 lines.
 - `depth`: call depth from the entry point (0, 1, 2…). The tool window indents by it.
 - Order = execution order, depth-first, exactly as you would explain it out loud.
-- Step count: 6–15 for a typical flow. Fold what is below max depth into the parent's body.
+- **Step count follows the flow — there is no target number.** One step per place where a
+  planner needs to stop: a decision that changes the outcome, a hand-off to another part of the
+  system, a rule that protects something. Straight-line code that just carries data forward is
+  folded into the neighbouring step's body, not given its own step. A simple flow is 4–6 steps; a
+  typical one 6–10; do not pad to reach a number, and do not cut real decisions to fit one. If a
+  flow honestly needs more than ~15, split it into two walks (e.g. `…-part1`, `…-part2`) and say
+  so in the overview step, rather than compressing. `--steps N` is a hard cap the user asked for.
 - **Step 1 is an overview with no `file`** (text-only step): what this flow is for in product
   terms, when it starts, how it ends, and the 2–4 rules that shape it. A planner should be able to
   read only this step and know what the feature does.
