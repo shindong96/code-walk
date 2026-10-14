@@ -73,4 +73,12 @@ intellijPlatform {
         }
     }
     buildSearchableOptions = false
+
+    // ./gradlew verifyPlugin — binary-compatibility check against other IDEs the plugin claims to support.
+    // The plugin uses only platform APIs (no Rider-specific classes), so IntelliJ IDEA is the one to prove.
+    pluginVerification {
+        ides {
+            create(org.jetbrains.intellij.platform.gradle.IntelliJPlatformType.IntellijIdea, "2026.2.1")
+        }
+    }
 }
