@@ -58,10 +58,14 @@ object Markdown {
             when {
                 line.startsWith("```") -> {
                     flushPara(); closeList()
+                    val lang = line.drop(3).trim().lowercase()
                     val code = StringBuilder()
                     i++
                     while (i < lines.size && !lines[i].startsWith("```")) { code.append(esc(lines[i])).append('\n'); i++ }
-                    out.append("<pre>").append(code).append("</pre>")
+                    // ```mermaid → <pre class="mermaid">: the JCEF view renders it with mermaid.js,
+                    // the Swing fallback just shows the source.
+                    if (lang == "mermaid") out.append("<pre class=\"mermaid\">").append(code).append("</pre>")
+                    else out.append("<pre>").append(code).append("</pre>")
                 }
                 line.startsWith("#") -> {
                     flushPara(); closeList()

@@ -16,6 +16,10 @@ Click a step and the editor jumps to the code and highlights it.
 You ask questions in Claude Code. It knows which step you are looking at,
 so "why is it done this way here?" is answered against that code.
 
+Explanations are written around the **business flow** so a product manager can follow them. The
+first step, "at a glance", carries a mermaid diagram of the whole flow, and `(line 123)` references
+in a step body are clickable — the editor jumps there.
+
 ```
  Claude Code                         ~/.code-walk/                       Rider
  ───────────                         ─────────────                       ─────
@@ -32,7 +36,7 @@ Nothing is written inside the repository. Walks and state live in `~/.code-walk/
 
 | Part | Where | Role |
 |------|-------|------|
-| IDE plugin (Kotlin) | `src/` | Tool window, step list, editor navigation + highlight, state file |
+| IDE plugin (Kotlin) | `src/` | Tool window, step list, editor navigation + highlight, state file. The explanation pane is the IDE's embedded browser (JCEF) with bundled mermaid.js, falling back to a Swing pane when JCEF is unavailable |
 | Claude Code plugin | `claude-plugin/` | `/walk` command, `code-walk` skill, hook that injects the current step |
 
 <br>
@@ -78,7 +82,8 @@ A moment later the walk appears in the **Code Walk** tab at the bottom of Rider.
 |--------|-----|
 | Move between steps | Click in the list, or `ctrl+alt+↓` / `ctrl+alt+↑` |
 | Ask | Just ask in Claude Code — the step you are viewing is passed along automatically |
-| Switch walks | Dropdown at the top of the tool window |
+| Switch walks | Dropdown at the top of the tool window (grouped by date) |
+| Delete a walk | Trash icon on the dropdown row, or select the row and press `Delete` |
 
 <br>
 

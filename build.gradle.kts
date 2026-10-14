@@ -36,6 +36,8 @@ val riderPath: String? = providers.gradleProperty("riderPath").orNull?.takeIf { 
 dependencies {
     intellijPlatform {
         if (riderPath != null) local(riderPath) else rider(providers.gradleProperty("platformVersion"))
+        // JCEF (embedded Chromium) is a separate bundled plugin since 2025.x; needed for the diagram-capable body view.
+        bundledPlugin("com.intellij.modules.jcef")
         testFramework(TestFrameworkType.Platform)
     }
     testImplementation("junit:junit:4.13.2")

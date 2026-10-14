@@ -78,7 +78,49 @@ Path: `~/.code-walk/walks/<id>.walk.json` — **outside the repo**, so nothing l
   so in the overview step, rather than compressing. `--steps N` is a hard cap the user asked for.
 - **Step 1 is an overview with no `file`** (text-only step): what this flow is for in product
   terms, when it starts, how it ends, and the 2–4 rules that shape it. A planner should be able to
-  read only this step and know what the feature does.
+  read only this step and know what the feature does. **It always contains a diagram** — see below.
+
+### Diagrams (mermaid)
+
+The tool window renders ```` ```mermaid ```` fences as diagrams. Use them in exactly these places:
+
+1. **Overview step — mandatory.** One `flowchart TD` of the whole flow, start to end. This is the
+   picture a planner keeps in their head, so it is drawn for a non-developer:
+   - Nodes are **business actions or states** in the user's language: `[비밀번호 제출]`,
+     `[토큰 발급]`, `[다른 리전에 확인]`. A class/method name may follow in parentheses only when
+     it is short and a developer would look for it: `[로그인 시도<br>(Login)]` — never alone.
+   - Decisions are diamonds phrased as a question, with the answers on the edges:
+     `{이 리전에 계정이 있나?} -->|있음| …` / `-->|없음| …`.
+   - Group by **who does it** with `subgraph`: `앱`, `서버`, `외부(애플)`, `본사 DB`. Three or
+     fewer groups.
+   - 6–12 nodes. If the flow needs more, the diagram shows the main path and the step bodies
+     carry the rest. End states are explicit: `[로그인 완료]`, `[거절]`, `[동기화 건너뜀]`.
+   - No technical nodes: no DTOs, no HTTP codes, no cache, no "async". Those are not what the
+     flow *is*.
+2. **A step with three or more outcomes** — a small `flowchart` of just that decision, same rules.
+3. **A round-trip between systems** (app ↔ server ↔ external service) — a `sequenceDiagram`
+   with participants named for the reader (`앱`, `서버`, `애플 서버`), 4–8 messages.
+
+Anywhere else: no diagram. Keep labels short (≤ 4 words per line, `<br>` to wrap). Quote labels
+that contain parentheses or special characters: `A["로그인 시도 (Login)"]`.
+
+Example overview diagram:
+
+```mermaid
+flowchart TD
+  subgraph 앱
+    A[아이디 입력] --> B{계정이 있나?}
+  end
+  subgraph 서버
+    B -->|있음| C[비밀번호 제출]
+    B -->|없음| Z1[가입으로 안내]
+    C --> D{비밀번호가 맞나?}
+    D -->|맞음| E[토큰 발급 · 로그인 완료]
+    D -->|틀림| F{5번째 실패?}
+    F -->|아니오| G[남은 횟수 안내]
+    F -->|예| H[10분 잠금]
+  end
+```
 
 ### Audience: the planner sits next to the developer
 
@@ -161,12 +203,47 @@ Plain language. Identifiers stay in backticks and stay rare.
 
 ## 3. Reply in chat
 
-After writing the file, reply with:
+After writing the file, reply with — in this order:
 
 1. One line: which entry point you picked (if it was a described flow).
-2. The **map**: a nested bullet list, one bullet per step, `<비즈니스 의미> (`Class.Method`)`,
+2. **The overview diagram first — rendered, not as a code block.** The chat does not draw
+   ```` ```mermaid ```` fences, so draw it with the visualize widget when that tool is available:
+   call `mcp__visualize__read_me` (modules `["diagram"]`) once, then `mcp__visualize__show_widget`
+   with the HTML below, pasting the overview step's mermaid source into `src`. Title the widget
+   `<walk-id>_overview`. If the widget tool is not available, fall back to the fenced block.
+
+   ```html
+   <h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">전체 흐름도</h2>
+   <div id="walk-diagram" style="padding:8px 0;overflow-x:auto"></div>
+   <script type="module">
+   import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+   const mode = document.documentElement.dataset.mode;
+   const dark = mode ? mode === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+   await document.fonts.ready;
+   mermaid.initialize({
+     startOnLoad: false, theme: 'base', securityLevel: 'strict',
+     fontFamily: '"anthropic-sans", sans-serif',
+     flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+     themeVariables: {
+       darkMode: dark, fontSize: '13px', fontFamily: '"anthropic-sans", sans-serif',
+       primaryColor: dark ? '#26215C' : '#EEEDFE', primaryBorderColor: dark ? '#AFA9EC' : '#534AB7',
+       primaryTextColor: dark ? '#CECBF6' : '#26215C',
+       lineColor: dark ? '#9c9a92' : '#73726c', textColor: dark ? '#c2c0b6' : '#3d3d3a',
+       clusterBkg: dark ? '#2C2C2A' : '#F1EFE8', clusterBorder: dark ? '#5F5E5A' : '#B4B2A9',
+     },
+   });
+   const src = `flowchart TD
+     ...overview mermaid source here...`;
+   const { svg } = await mermaid.render('walk-svg', src);
+   document.getElementById('walk-diagram').innerHTML = svg;
+   </script>
+   ```
+
+   Keep the mermaid source identical to the overview step's so the IDE and the chat show the
+   same picture. Do not put prose inside the widget.
+3. The **map**: a nested bullet list, one bullet per step, `<비즈니스 의미> (`Class.Method`)`,
    indented by depth — the same phrasing as the step titles. No prose beyond that.
-3. One line telling them the walk is in the Code Walk tool window (`View | Tool Windows | Code Walk`,
+4. One line telling them the walk is in the Code Walk tool window (`View | Tool Windows | Code Walk`,
    or the tab at the bottom), and that `ctrl+alt+↓ / ↑` move between steps.
 
 Then stop and wait for questions.

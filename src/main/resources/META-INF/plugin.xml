@@ -10,6 +10,8 @@
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
+    <!-- Optional: with JCEF the explanation pane renders mermaid diagrams; without it we fall back to a Swing pane. -->
+    <depends optional="true" config-file="codewalk-jcef.xml">com.intellij.modules.jcef</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow id="Code Walk"

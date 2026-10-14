@@ -194,9 +194,13 @@ class WalkSession(private val project: Project) : Disposable {
 
     private fun writeState(walk: Walk, index: Int, focus: Triple<String?, Int, Int?>? = null) {
         val step = walk.steps[index]
+        // Same numbering the panel shows: a text-only overview first step is "0", code steps 1…N.
+        val hasOverview = walk.steps.first().file == null
         val state = WalkState(
             walk = walk.id, project = walk.project.ifEmpty { project.basePath ?: "" },
-            step = index + 1, stepCount = walk.steps.size, stepId = step.id, title = step.title,
+            step = if (hasOverview) index else index + 1,
+            stepCount = if (hasOverview) walk.steps.size - 1 else walk.steps.size,
+            stepId = step.id, title = step.title,
             file = step.file, line = step.line, endLine = step.endLine,
             focusFile = focus?.first, focusLine = focus?.second, focusEndLine = focus?.third,
             updatedAt = OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),

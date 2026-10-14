@@ -28,6 +28,15 @@ class MarkdownTest {
     }
 
     @Test
+    fun `mermaid fence becomes a pre with class mermaid, escaped`() {
+        assertEquals(
+            "<pre class=\"mermaid\">flowchart TD\n  A[약관 동의?] --&gt;|예| B[동기화 시작]\n</pre>",
+            Markdown.toHtml("```mermaid\nflowchart TD\n  A[약관 동의?] -->|예| B[동기화 시작]\n```"),
+        )
+        assertEquals("<pre>x\n</pre>", Markdown.toHtml("```kotlin\nx\n```"))
+    }
+
+    @Test
     fun `inline code and bullets still render`() {
         assertEquals(
             "<p><code>RegionHint</code> 를 붙여요</p><ul><li>잠겨 있으면: 거절</li></ul>",

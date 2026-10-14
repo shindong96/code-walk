@@ -35,10 +35,7 @@ class DeleteWalkAction : AnAction() {
         val s = WalkSession.get(project)
         val walk = s.current ?: return
         val path = s.entries.firstOrNull { it.walk.id == walk.id }?.path ?: return
-        val yes = com.intellij.openapi.ui.MessageDialogBuilder
-            .yesNo("Walk 삭제", "'${walk.title.ifEmpty { walk.id }}' 을 삭제할까요?\n\n$path")
-            .yesText("삭제").noText("취소")
-            .ask(project)
+        val yes = dev.shin.codewalk.ui.WalkPicker.confirmDelete(project, walk, path.toString())
         if (yes && !s.delete(walk)) {
             com.intellij.openapi.ui.Messages.showErrorDialog(project, "파일을 삭제하지 못했어요:\n$path", "Walk 삭제")
         }

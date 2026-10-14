@@ -1,0 +1,2 @@
+<!-- Loaded only when the JCEF plugin is present. No extra extensions needed: the code checks JBCefApp.isSupported() at runtime. -->
+<idea-plugin/>
