@@ -83,6 +83,7 @@ Claude Code 에서:
 | 질문 | Claude Code 에서 그냥 물어보기 — 보고 있는 단계가 자동으로 전달돼요 |
 | walk 전환 | 툴 윈도우 상단 드롭다운 (날짜별로 묶여요) |
 | walk 삭제 | 드롭다운 행의 휴지통 아이콘, 또는 행을 고르고 `Delete` |
+| 공유 | Claude Code 에서 `/walk-export` → 단일 HTML (`~/.code-walk/export/<id>.html`). 기본은 기획자용(도식·단계 목록·설명만), `--with-code` 를 주면 코드 발췌까지. 도식은 열 때 CDN 에서 불러와요 |
 
 <br>
 

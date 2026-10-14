@@ -84,6 +84,7 @@ A moment later the walk appears in the **Code Walk** tab at the bottom of Rider.
 | Ask | Just ask in Claude Code — the step you are viewing is passed along automatically |
 | Switch walks | Dropdown at the top of the tool window (grouped by date) |
 | Delete a walk | Trash icon on the dropdown row, or select the row and press `Delete` |
+| Share | `/walk-export` in Claude Code → one HTML file (`~/.code-walk/export/<id>.html`). Default is the planner view (diagram, step list, explanations); `--with-code` adds code excerpts. The diagram loads from a CDN when opened |
 
 <br>
 
